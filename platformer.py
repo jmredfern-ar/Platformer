@@ -1,4 +1,3 @@
-
 # https://www.youtube.com/watch?v=uWvb3QzA48c&list=PLsk-HSGFjnaH5yghzu7PcOzm9NhsW0Urw&index=18
 import pygame
 import random
@@ -14,6 +13,7 @@ GROUND = HEIGHT - 30
 PLAYER_ACC = 0.9
 PLAYER_FRICTION = -0.12
 PLAYER_GRAV = 0.9
+vec = pygame.math.Vector2
 
 #DEFINE COLORS
 WHITE = (255, 255, 255)
@@ -35,10 +35,18 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.Surface((25, 25))
         self.image.fill(BLACK)
         self.rect = self.image.get_rect()
+        
+        self.pos = vec(10, GROUND - 60)
+        self.vel = vec(0, 0)
+        self.acc = vec(0, 0)
+        self.can_jump = True
+        
         self.rect.x = x
         self.rect.y = y
 
     def update(self):
+
+        self.acc = vec(0, PLAYER_GRAV)
         keystate = pygame.key.get_pressed()
 
         #ARROW KEY CONTROLS
@@ -47,19 +55,35 @@ class Player(pygame.sprite.Sprite):
         if keystate[pygame.K_DOWN]:
             self.rect.y += 5
         if keystate[pygame.K_RIGHT]:
-            self.rect.x += 5
+            self.acc.x = PLAYER_ACC
+            #self.rect.x += 5 #DELETE
         if keystate[pygame.K_LEFT]:
-            self.rect.x += -5
+            self.acc.x = -PLAYER_ACC
+            #self.rect.x += -5 #DELETE
+        if self.vel.y == 0 and keystate[pygame.K_SPACE]:
+            self.vel.y = -20
 
+        #APPLY FRICTION IN THE X DIRECTION
+        self.acc.x += self.vel.x * PLAYER_FRICTION
+
+        #EQUATIONS OF MOTION
+        self.vel += self.acc
+        self.pos += self.vel + 0.5 * self.acc
+        
         #WRAP AROUND THE SIDES OF THE SCREEN
-        if self.rect.left > WIDTH:
-            self.rect.right = 0
-        if self.rect.right < 0:
-            self.rect.left = WIDTH
+        if self.pos.x > WIDTH:
+            self.pos.x = 0
+        if self.pos.x < 0:
+            self.pos.x = WIDTH
+
+        #SET THE NEW PLAYER POSITION BASED ON ABOVE
+        self.rect.midbottom = self.pos
 
         #SIMULATE THE GROUND
-        if self.rect.bottom > GROUND:
-            self.rect.bottom = GROUND -1
+        if self.pos.y > GROUND:
+            self.pos.y = GROUND + 1
+            self.vel.y = 0
+            #self.pos.y = GROUND -1
         
 #PLATFORM CLASS
 class Platform(pygame.sprite.Sprite):
