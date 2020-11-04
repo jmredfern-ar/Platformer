@@ -8,6 +8,8 @@ WIDTH = 600
 HEIGHT = 300
 FPS = 30
 GROUND = HEIGHT - 30
+SLOW = 3
+FAST = 8
 
 #CONSTANTS - PHYSICS
 PLAYER_ACC = 0.9
@@ -27,10 +29,19 @@ ALEXYELLOW = (235, 194, 12)
 game_folder = os.path.dirname(__file__)
 img_folder = os.path.join(game_folder, "img")
 
+#DRAW TEXT
+font_name = pygame.font.match_font("arial")
+def draw_text(screen, text, size, x, y):
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, BLACK)
+    text_rect = text_surface.get_rect()
+    text_rect.topleft = (x, y)
+    screen.blit(text_surface, text_rect)
+
 #PLAYER CLASS
 class Player(pygame.sprite.Sprite):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, platforms):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((25, 25))
         self.image.fill(BLACK)
@@ -40,9 +51,6 @@ class Player(pygame.sprite.Sprite):
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
         self.can_jump = True
-        
-        self.rect.x = x
-        self.rect.y = y
 
     def update(self):
 
@@ -56,10 +64,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.y += 5
         if keystate[pygame.K_RIGHT]:
             self.acc.x = PLAYER_ACC
-            #self.rect.x += 5 #DELETE
         if keystate[pygame.K_LEFT]:
             self.acc.x = -PLAYER_ACC
-            #self.rect.x += -5 #DELETE
         if self.vel.y == 0 and keystate[pygame.K_SPACE]:
             self.vel.y = -20
 
@@ -83,24 +89,53 @@ class Player(pygame.sprite.Sprite):
         if self.pos.y > GROUND:
             self.pos.y = GROUND + 1
             self.vel.y = 0
-            #self.pos.y = GROUND -1
+  
+
+        #HITS PLATFORM
+        hits = pygame.sprite.spritecollide(self, platforms, False)
+        if hits:
+            if self.rect.top > hits[0].rect.top: #jumping from underneath
+                self.pos.y = hits[0].rect.bottom + 25 + 1
+                self.vel.y = 0
+            else:
+                self.pos.y = hits[0].rect.top + 1
+                self.vel.y = 0
+
+    def getStats(self):
+        text = "Player\n" + "X: " + str(int(self.pos.x)) + ", Y: " + str(int(self.pos.y)) + "\n" + "ACC" + str(int(self.acc.x)) + " , " + str(int(self.acc.y))
+        return text
         
 #PLATFORM CLASS
 class Platform(pygame.sprite.Sprite):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, s):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((100, 25))
         self.image.fill(GREEN)
         self.rect = self.image.get_rect()
-        #self.rect.center = (10, GROUND - 30)
         self.rect.x = x
         self.rect.y = y
+        self.speed = s
         
     def update(self):
-        self.rect.x += -5
+        self.rect.x += -self.speed
         if self.rect.right < 0:
-            self.rect.left = WIDTH
+            #self.rect.left = WIDTH
+            self.kill()
+            
+#GROUND CLASS
+class Ground(pygame.sprite.Sprite):
+
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((600, 30))
+        self.image.fill(GREEN)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self):
+        pass
 
 #INITIALIZE VARIABLES
 pygame.init()
@@ -111,11 +146,20 @@ pygame.display.set_caption("Platformer")
 clock = pygame.time.Clock()
 
 #SPRITE GROUPS
+#platform = Platform(10, GROUND - 60)
+platforms = pygame.sprite.Group()
+#platforms.add(platform)
+
+
+ground = Ground(0, 270)
+player = Player(10, 10, platforms)
+
 all_sprites = pygame.sprite.Group()
-player = Player(10, 10)
-platform = Platform(10, GROUND - 60)
 all_sprites.add(player)
-all_sprites.add(platform)
+#all_sprites.add(platform)
+all_sprites.add(ground)
+
+
 
 # GAME LOOP:
 #   Process Events
@@ -124,21 +168,36 @@ all_sprites.add(platform)
 running = True
 while running:
 
-    clock.tick(FPS)
+    clock.tick(FPS) 
 
     #PROCESS EVENTS
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
+    #SPAWN PLATFORMS
+    while len(platforms) < 3:
+        buffer = 20
+        pX = random.randrange(WIDTH, WIDTH + 100)
+        pY = random.randrange(30, GROUND - 60)
+        pS = random.randrange(SLOW, FAST)
+        print(pX, pY)
+        p = Platform(pX, pY, pS)
+        platforms.add(p)
+        all_sprites.add(p)
+
     #UPDATE
     all_sprites.update()
 
     # DRAW
     screen.fill(ALEXYELLOW)
+    draw_text(screen, "PLATFORMER", 24, 10, 10)
+    text = player.getStats()
+    draw_text(screen, text, 12, 10, 40)
     all_sprites.draw(screen)
 
     # FLIP AFTER DRAWING
     pygame.display.flip()
 
 pygame.quit()
+
