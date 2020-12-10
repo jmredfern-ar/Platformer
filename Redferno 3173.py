@@ -1,38 +1,31 @@
 from settings import *
         
-#INITIALIZE PYGAME
-pygame.init()
-pygame.mixer.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("My Game")
-
-clock = pygame.time.Clock()
-
-#ADD BACKGROUND
-bkgr_image = pygame.image.load(os.path.join(img_folder, "background.jpg")).convert()
-background = pygame.transform.scale(bkgr_image, (WIDTH, HEIGHT))
-background_rect = background.get_rect()
-bkgr_x = 0
-
 #CREATE SPRITES, ADD TO GROUPS
-'''
-platform = Platform()
-all_sprites.add(platform)
-platforms.add(platform)
-'''
-
 player = Player()
 all_sprites.add(player)
 
-robot = Mob()
-all_sprites.add(robot)
+healthBar = HealthBar()
+all_sprites.add(healthBar)
+
+def newMob():
+    robot = Mob()
+    all_sprites.add(robot)
+    mobs.add(robot)
+
+newMob()
 
 # GAME LOOP:
 #   Process Events
 #   Update
 #   Draw
+start = True
 running = True
 while running:
+
+    #SHOW START SCREEN ONCE
+    if start:
+        show_start_screen()
+        start = False
 
     clock.tick(FPS)
 
@@ -41,8 +34,16 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    player_orig_x = player.getPosX()
+ 
     #UPDATE
     all_sprites.update()
+
+    #CHECK TO SEE IF LASER HITS MOB
+    ##                               group1  group2   dokill1 dokill2             
+    hits = pygame.sprite.groupcollide(mobs,  lasers,   True,   True)
+    for hit in hits:
+        newMob()
     
     # DRAW
     rel_x = bkgr_x % background.get_rect().width
@@ -50,7 +51,7 @@ while running:
     if rel_x < WIDTH:
         screen.blit(background, (rel_x, 0))
     bkgr_x -= 1
-    
+
     all_sprites.draw(screen)
 
     # FLIP AFTER DRAWING
