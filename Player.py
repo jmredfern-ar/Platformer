@@ -63,7 +63,9 @@ class Player(pygame.sprite.Sprite):
             self.vel.y = -20
         if keystate[pygame.K_s]:
             self.action = "SHOOTING"
+            shoot_sound.play()
             self.shoot()
+
 
         #APPLY FRICTION IN THE X DIRECTION
         self.acc.x += self.vel.x * PLAYER_FRICTION
@@ -117,3 +119,6 @@ class Player(pygame.sprite.Sprite):
             laser = Laser(self.rect.right, self.rect.centery)
             all_sprites.add(laser)
             lasers.add(laser)
+
+    def getPosX(self):
+        return self.rect.x
