@@ -21,13 +21,24 @@ class Player(pygame.sprite.Sprite):
                        pygame.image.load(os.path.join(img_folder, "shootRight3.png")).convert(),
                        pygame.image.load(os.path.join(img_folder, "shootRight4.png")).convert()
                       ]
+
+        self.shield = [
+                       pygame.image.load(os.path.join(img_folder, "shield0.png")).convert(),
+                       pygame.image.load(os.path.join(img_folder, "shield1.png")).convert(),
+                       pygame.image.load(os.path.join(img_folder, "shield2.png")).convert(),
+                       pygame.image.load(os.path.join(img_folder, "shield3.png")).convert(),
+                       pygame.image.load(os.path.join(img_folder, "shield4.png")).convert()
+                      ]
         self.player_count = 0
         self.image = self.walkRight[0]
         self.image = pygame.transform.scale(self.image, (128, 128))
         self.image.set_colorkey(BLACK)
 
+        #CREATE TIMER OBJ FOR VARIOUS USES
+        #self.timer = Timer()
+
         #TRACK PLAYER DIRECTION
-        self.actions = ["RIGHT", "LEFT", "UP", "DOWN", "SHOOTING", "JUMPING", "NONE"]
+        self.actions = ["RIGHT", "LEFT", "UP", "DOWN", "SHOOTING", "JUMPING", "SHIELD", "NONE"]
         
         #ESTABLISH VECTORS FOR PHYSICS
         self.rect = self.image.get_rect()
@@ -39,33 +50,60 @@ class Player(pygame.sprite.Sprite):
         self.shoot_delay = 250
         self.last_shot = pygame.time.get_ticks()
 
+        #SET UP SHIELD
+        self.shieldOn = False
+        self.shieldCountDown = 0
+        self.shieldCoolDown = 0
+
     def update(self):
 
+        #INITIALIZE VARS
         self.action = "NONE"
+        self.shieldOn = False
+        self.canShoot = True
         self.acc = vec(0, PLAYER_GRAV)
-
-        # CHECKS TO SEE WHICH KEYS WERE IN THE LIST (A.K.A. PRESSED)
-        keystate = pygame.key.get_pressed() 
-        if keystate[pygame.K_RIGHT]:
+        
+        keystate = pygame.key.get_pressed()
+        if keystate[pygame.K_d]:
             self.action = "RIGHT"            
             self.acc.x += PLAYER_ACC
-        if keystate[pygame.K_LEFT]:
+        if keystate[pygame.K_a]:
             self.action = "LEFT" 
             self.acc.x += -PLAYER_ACC
-        if keystate[pygame.K_UP]:
+        if keystate[pygame.K_w]:
             self.action = "UP" 
             self.rect.y += -5
-        if keystate[pygame.K_DOWN]:
+        if keystate[pygame.K_s]:
             self.action = "DOWN" 
             self.rect.y += 5
         if self.vel.y == 0 and keystate[pygame.K_SPACE]:
             self.action = "JUMPING"
             self.vel.y = -20
-        if keystate[pygame.K_s]:
+        if keystate[pygame.K_r]:
+            pShield_sound.play()
+            '''
+            if shieldOn == False:
+                start = time.time()
+                stop = start + 3
+                if time.time() < stop:
+                    self.vel.x = 0
+                    self.action = "SHIELD"
+                    shieldOn = True
+                else:
+                    self.action = "NONE"
+            '''
+            self.action = "SHIELD"
+                
+        #CHECK FOR MOUSE EVENTS
+        mouseState = pygame.mouse.get_pressed()
+        if mouseState[0] == 1 and self.canShoot == True:
+            pos = pygame.mouse.get_pos()
+            mouse_x = pos[0]
+            mouse_y = pos[1]
+
             self.action = "SHOOTING"
             shoot_sound.play()
-            self.shoot()
-
+            self.shoot(mouse_x, mouse_y)                   
 
         #APPLY FRICTION IN THE X DIRECTION
         self.acc.x += self.vel.x * PLAYER_FRICTION
@@ -86,9 +124,18 @@ class Player(pygame.sprite.Sprite):
             self.image.set_colorkey(BLACK)
             
             self.player_count += 1
-            if self.player_count > 3:
+            if self.player_count > 4:
                 self.player_count = 0
+                
+        elif self.action == "SHIELD":
+            self.image = self.shield[self.player_count]
+            self.image = pygame.transform.scale(self.image, (128, 128))
+            self.image.set_colorkey(BLACK)
 
+            self.player_count += 1
+            if self.player_count > 4:
+                self.player_count = 0
+                    
         else:
             self.image = self.walkRight[0]
             self.image = pygame.transform.scale(self.image, (128, 128))
@@ -112,13 +159,21 @@ class Player(pygame.sprite.Sprite):
         #SET THE NEW PLAYER POSITION BASED ON ABOVE
         self.rect.midbottom = self.pos
 
-    def shoot(self):
+    def shoot(self, mouse_x, mouse_y):
         now = pygame.time.get_ticks()
         if now - self.last_shot > self.shoot_delay:
             self.last_shot = now
-            laser = Laser(self.rect.right, self.rect.centery)
+
+            laser = Laser(self.rect.right,    
+                          self.rect.centery,
+                          mouse_x,
+                          mouse_y)
+            
             all_sprites.add(laser)
             lasers.add(laser)
 
     def getPosX(self):
         return self.rect.x
+
+    def getShieldOn(self):
+        return self.shieldOn
