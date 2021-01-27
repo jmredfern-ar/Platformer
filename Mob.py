@@ -5,7 +5,7 @@ class Mob(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        print("Robot created...")
+
         #ADD ROBOT IMAGES
         self.robotRight = [
                             pygame.image.load(os.path.join(img_folder, "robotLeft0.png")).convert(),
@@ -24,7 +24,10 @@ class Mob(pygame.sprite.Sprite):
         self.rect.x = WIDTH + 128
         self.rect.y = GROUND - 128
         self.speedx = -3
-
+    
+    def shoot(self):
+        pass
+            
     def update(self):
 
         #TRANSITION BTW ROBOT IMAGES
@@ -40,4 +43,5 @@ class Mob(pygame.sprite.Sprite):
         self.rect.x += self.speedx
         if self.rect.right < 0:
             self.rect.left = WIDTH
-            
+
+        self.shoot()
